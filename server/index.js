@@ -1,12 +1,13 @@
 const express = require('express'), http = require('http'), session = require('express-session'), bcrypt = require('bcrypt');
 const { Server } = require('socket.io'), { Pool } = require('pg'), PgStore = require('connect-pg-simple')(session), fs = require('fs'), path = require('path');
 const MathGen = require('../shared/mathGenerator'), { newRatings } = require('./elo');
+const mountCharacters = require('./characters');
 process.on('unhandledRejection', e => console.error(e));
 
 if (!process.env.DATABASE_URL) { console.error('Falta la variable DATABASE_URL (cadena de conexión de Neon).'); process.exit(1); }
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
 const q = (sql, a) => pool.query(sql, a).then(r => r.rows), one = async (sql, a) => (await q(sql, a))[0];
-const PUB = 'id,username,elo,wins,losses,best_survival', me = id => one(`SELECT ${PUB} FROM users WHERE id=$1`, [id]);
+const PUB = 'id,username,elo,wins,losses,best_survival,character', me = id => one(`SELECT ${PUB} FROM users WHERE id=$1`, [id]);
 
 const app = express(), srv = http.createServer(app), io = new Server(srv);
 app.set('trust proxy', 1);
@@ -15,6 +16,7 @@ const sess = session({ store: new PgStore({ pool, createTableIfMissing: true }),
 app.use(express.json(), sess, express.static(path.join(__dirname, '../public')));
 app.use('/shared', express.static(path.join(__dirname, '../shared')));
 io.engine.use(sess);
+mountCharacters(app, pool, req => req.session.uid || null);   // rutas /api/character
 
 const GOAL = 10, LOCK_MS = 1000, MATCH_MS = 180000, GRACE_MS = 20000, CHALLENGE_MS = 30000;
 const online = new Map(), active = new Map(), rematch = new Map(), lastOpp = new Map(), challenges = new Map();
@@ -36,7 +38,7 @@ app.post('/api/logout', (q_, r) => q_.session.destroy(() => r.json({ ok: 1 })));
 app.get('/api/me', async (q_, r) => q_.session.uid ? r.json(await me(q_.session.uid)) : r.status(401).end());
 app.get('/api/ranking', async (q_, r) => {
   if (!q_.session.uid) return r.status(401).end();
-  const rows = await q('SELECT id,username,elo,wins,losses FROM users ORDER BY elo DESC, wins DESC LIMIT 100');
+  const rows = await q('SELECT id,username,elo,wins,losses,character FROM users ORDER BY elo DESC, wins DESC LIMIT 100');
   r.json(rows.map(({ id, ...u }) => ({ ...u, online: online.has(id) && !active.has(id), me: id === q_.session.uid })));
 });
 app.get('/api/h2h', async (q_, r) => {
@@ -52,6 +54,7 @@ app.post('/api/survival', async (q_, r) => {
 
 /* ---------- Partidas ---------- */
 const other = (g, p) => g.p.find(x => x !== p);
+const chars = (g, p) => ({ myChar: p.user.character, rivalChar: other(g, p).user.character });
 const view = (g, p) => ({ rival: other(g, p).user, goal: GOAL, you: p.i, rv: other(g, p).i, q: MathGen.pub(g.qs[p.i]),
   msLeft: MATCH_MS - (Date.now() - g.t0), away: !!other(g, p).gone, chat: g.chat.slice(-30) });
 
@@ -71,7 +74,7 @@ async function finish(g, w, reason) {
   g.p.forEach(p => { clearTimeout(p.timer); active.delete(p.uid); });
   const [a, b] = g.p; lastOpp.set(a.uid, b.uid); lastOpp.set(b.uid, a.uid);
   if (!w) { if (a.i !== b.i) w = a.i > b.i ? a : b; else if (a.err !== b.err) w = a.err < b.err ? a : b; } // al acabar el tiempo: más aciertos, luego menos errores
-  if (!w) { for (const p of g.p) p.s.emit('end', { draw: true, reason, elo: (await me(p.uid)).elo, delta: 0, rival: other(g, p).user.username, score: [p.i, other(g, p).i] }); return; }
+  if (!w) { for (const p of g.p) p.s.emit('end', { draw: true, reason, elo: (await me(p.uid)).elo, delta: 0, rival: other(g, p).user.username, score: [p.i, other(g, p).i], ...chars(g, p) }); return; }
   const l = other(g, w), uw = await me(w.uid), ul = await me(l.uid), [ew, el] = newRatings(uw.elo, ul.elo);
   await q('UPDATE users SET elo=$1,wins=wins+1 WHERE id=$2', [ew, w.uid]);
   await q('UPDATE users SET elo=$1,losses=losses+1 WHERE id=$2', [el, l.uid]);
@@ -82,7 +85,7 @@ async function finish(g, w, reason) {
   await q('UPDATE h2h SET wins_a=wins_a+$1,wins_b=wins_b+$2,streak_owner=$3,streak_len=$4 WHERE user_a=$5 AND user_b=$6',
     [w.uid === x ? 1 : 0, w.uid === y ? 1 : 0, w.uid, r.streak_owner === w.uid ? r.streak_len + 1 : 1, x, y]);
   for (const p of g.p) { const won = p === w;
-    p.s.emit('end', { won, reason, delta: won ? ew - uw.elo : el - ul.elo, elo: won ? ew : el, rival: other(g, p).user.username, score: [p.i, other(g, p).i] }); }
+    p.s.emit('end', { won, reason, delta: won ? ew - uw.elo : el - ul.elo, elo: won ? ew : el, rival: other(g, p).user.username, score: [p.i, other(g, p).i], ...chars(g, p) }); }
 }
 
 io.on('connection', async s => {

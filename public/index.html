@@ -32,6 +32,9 @@ input:focus{border-color:var(--g);outline:0}
 table{width:100%;border-collapse:collapse}th{color:var(--mute);font-size:.85rem;text-align:left}td,th{padding:10px 6px;border-bottom:1px solid var(--line)}
 tr.me td{background:#1c2a1a}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#44504a;margin-right:8px}.dot.on{background:var(--g);box-shadow:0 0 8px var(--g)}
 .err{color:var(--red);min-height:1.3em;margin:4px 0 0}
+.av{display:inline-flex;vertical-align:middle;margin-right:8px}.av svg{display:block}
+.hero{display:flex;align-items:center;gap:16px}.hero h1{margin:0}
+.endchars{display:flex;justify-content:center;gap:18px;margin-bottom:6px}.endchars svg{display:block}
 /* Partida */
 .vs{display:flex;justify-content:space-between;align-items:center;margin:6px 2px;font-weight:900}
 #clock{font-size:1.5rem;background:var(--card2);padding:4px 14px;border-radius:8px;font-variant-numeric:tabular-nums}#clock.low{color:var(--red)}
@@ -67,7 +70,7 @@ tr.me td{background:#1c2a1a}.dot{display:inline-block;width:9px;height:9px;borde
 <body>
 <header id="top" hidden>
   <div class="logo">⚡ MathDuel</div>
-  <nav><button id="nHome" class="on">Jugar</button><button id="nRank">Ranking</button></nav>
+  <nav><button id="nHome" class="on">Jugar</button><button id="nRank">Ranking</button><button id="nChar">Personaje</button></nav>
   <div class="pill" id="pill"></div><button class="btn sec sm" id="logout">Salir</button>
 </header>
 <main>
@@ -82,7 +85,7 @@ tr.me td{background:#1c2a1a}.dot{display:inline-block;width:9px;height:9px;borde
   </section>
 
   <section id="home" hidden>
-    <h1 id="hello"></h1>
+    <div class="hero"><div id="myChar"></div><h1 id="hello"></h1></div>
     <div class="stats"><div><b id="sElo"></b><span>Elo</span></div><div><b id="sW"></b><span>Victorias</span></div><div><b id="sL"></b><span>Derrotas</span></div><div><b id="sB"></b><span>Récord infinito</span></div></div>
     <button class="btn big" id="findDuel">Buscar duelo</button>
     <p class="mute">Cada partida dura máximo 3 minutos. Para retar a alguien, entra a Ranking.</p>
@@ -96,6 +99,11 @@ tr.me td{background:#1c2a1a}.dot{display:inline-block;width:9px;height:9px;borde
   <section id="rank" hidden>
     <h1>Ranking</h1><p class="mute">Toca "Retar" junto a un jugador conectado.</p>
     <div class="card"><table><thead><tr><th>#</th><th>Jugador</th><th>Elo</th><th>V</th><th>D</th><th></th></tr></thead><tbody id="rankBody"></tbody></table></div>
+  </section>
+
+  <section id="char" hidden>
+    <h1>Tu personaje</h1><p class="mute">Elige un modelo, cambia las partes y colorea con el disco.</p>
+    <div id="creatorBox"></div>
   </section>
 
   <section id="play" hidden>
@@ -116,6 +124,8 @@ tr.me td{background:#1c2a1a}.dot{display:inline-block;width:9px;height:9px;borde
 <div id="toast" role="status"></div>
 
 <script src="/shared/mathGenerator.js"></script>
+<script src="/shared/characters.js"></script>
+<script src="/creator.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
@@ -124,16 +134,17 @@ const api = (u, b) => fetch(u, { method: b ? 'POST' : 'GET', headers: { 'Content
   .then(async r => { const j = await r.json().catch(() => ({})); if (!r.ok) throw j; return j; });
 let user, socket, phase = 'idle', ctx = null, goal = 10, lockedUntil = 0;
 const show = id => { $$('main>section').forEach(e => e.hidden = e.id !== id); $('#top').hidden = id === 'auth';
-  $('#nHome').classList.toggle('on', id === 'home'); $('#nRank').classList.toggle('on', id === 'rank'); };
+  $('#nHome').classList.toggle('on', id === 'home'); $('#nRank').classList.toggle('on', id === 'rank'); $('#nChar').classList.toggle('on', id === 'char'); };
 function toast(t) { const e = $('#toast'); e.textContent = t; e.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.remove('on'), 3500); }
 const openModal = h => { $('#mbox').innerHTML = h; $('#modal').hidden = false; }, closeModal = () => $('#modal').hidden = true;
 const setBar = (id, f) => $(`#${id} .fill`).style.width = Math.min(100, f * 100) + '%';
 
 /* ---------- Sesión y portada ---------- */
-function setUser(u) { user = u; $('#pill').innerHTML = `${esc(u.username)} · <b>${u.elo}</b>`; }
+const av = (c, n) => `<span class="av">${Characters.render(c, n, true)}</span>`;   // avatar (cabeza y torso)
+function setUser(u) { user = u; $('#pill').innerHTML = `${av(u.character, 26)}${esc(u.username)} · <b>${u.elo}</b>`; }
 async function home(u) {
   setUser(u || await api('/api/me')); connect();
-  $('#hello').textContent = user.username; $('#sElo').textContent = user.elo; $('#sW').textContent = user.wins; $('#sL').textContent = user.losses; $('#sB').textContent = user.best_survival;
+  $('#hello').textContent = user.username; $('#myChar').innerHTML = Characters.render(user.character, 90, true); $('#sElo').textContent = user.elo; $('#sW').textContent = user.wins; $('#sL').textContent = user.losses; $('#sB').textContent = user.best_survival;
   const rows = await api('/api/h2h').catch(() => []);
   $('#h2h').innerHTML = rows.length ? rows.map(r => `<tr><td>${esc(r.rival)}</td><td>${r.wins}</td><td>${r.losses}</td><td>${r.streak > 0 ? '+' + r.streak : r.streak}</td></tr>`).join('')
     : '<tr><td colspan="4" class="mute">Todavía no has jugado ningún duelo.</td></tr>';
@@ -143,10 +154,18 @@ $('#authForm').onsubmit = async e => { e.preventDefault();
   try { await home(await api('/api/' + e.submitter.dataset.a, { username: $('#u').value, password: $('#p').value })); } catch (x) { $('#authErr').textContent = x.error || 'No se pudo conectar.'; } };
 $('#logout').onclick = async () => { await api('/api/logout', {}); if (socket) socket.disconnect(); socket = null; show('auth'); };
 $('#nHome').onclick = () => phase === 'idle' ? home() : 0;
+$('#nChar').onclick = async () => {
+  if (phase !== 'idle') return; show('char');
+  try { const d = await api('/api/character');
+    Characters.mountCreator($('#creatorBox'), { initial: d.character, unlocked: d.unlocked,
+      onSave: async cfg => { await api('/api/character', { character: cfg }); setUser({ ...user, character: cfg }); },
+      onUnlock: code => api('/api/character/unlock', { code }) });
+  } catch (x) { $('#creatorBox').textContent = x.error || 'No se pudo cargar el creador.'; }
+};
 $('#nRank').onclick = async () => {
   if (phase !== 'idle') return; show('rank');
   const rows = await api('/api/ranking').catch(() => []);
-  $('#rankBody').innerHTML = rows.map((r, i) => `<tr class="${r.me ? 'me' : ''}"><td>${i + 1}</td><td><span class="dot ${r.online ? 'on' : ''}"></span>${esc(r.username)}</td><td>${r.elo}</td><td>${r.wins}</td><td>${r.losses}</td>
+  $('#rankBody').innerHTML = rows.map((r, i) => `<tr class="${r.me ? 'me' : ''}"><td>${i + 1}</td><td><span class="dot ${r.online ? 'on' : ''}"></span>${av(r.character, 32)}${esc(r.username)}</td><td>${r.elo}</td><td>${r.wins}</td><td>${r.losses}</td>
     <td>${r.me ? '' : `<button class="btn sm" data-c="${esc(r.username)}" ${r.online ? '' : 'disabled'}>Retar</button>`}</td></tr>`).join('');
   $$('[data-c]').forEach(b => b.onclick = () => socket.emit('challenge', b.dataset.c));
 };
@@ -174,7 +193,7 @@ function connect() {
   if (socket) return; socket = io();
   socket.on('match', m => { if (ctx && ctx.stop) ctx.stop(); closeModal(); phase = 'duel'; goal = m.goal; show('play'); setMode(true); hideAway();
     $('#chatLog').innerHTML = ''; (m.chat || []).forEach(addMsg);
-    $('#rvName').textContent = `${m.rival.username} · ${m.rival.elo}`; $('#meName').textContent = user.username;
+    $('#rvName').innerHTML = `${av(m.rival.character, 40)}${esc(m.rival.username)} · ${m.rival.elo}`; $('#meName').innerHTML = av(user.character, 40) + esc(user.username);
     setBar('tubeMe', (m.you || 0) / goal); setBar('tubeRv', (m.rv || 0) / goal); ask(m.q); startClock(m.msLeft);
     $('#status').textContent = m.resume ? 'Volviste a la partida.' : '¡Empieza el duelo!'; if (m.away) showAway(20000);
     ctx = { submit: v => socket.emit('answer', v) }; });
@@ -194,14 +213,14 @@ function connect() {
 function endModal(r) {
   const reasons = { abandono: 'Por abandono', tiempo: 'Por tiempo', meta: 'Por aciertos' };
   const [icon, title] = r.draw ? ['🤝', 'Empate'] : r.won ? ['🏆', '¡Has ganado!'] : ['💥', 'Has perdido'];
-  openModal(`<div class="mtitle">${icon} ${title}</div><div class="msub">${reasons[r.reason] || ''} · ${r.score[0]}–${r.score[1]} contra ${esc(r.rival)}</div>
+  openModal(`<div class="endchars">${Characters.render(r.myChar, 90, true)}${Characters.render(r.rivalChar, 90, true)}</div><div class="mtitle">${icon} ${title}</div><div class="msub">${reasons[r.reason] || ''} · ${r.score[0]}–${r.score[1]} contra ${esc(r.rival)}</div>
     <div class="elo"><span style="font-size:2rem">⚡</span><b>${r.elo}</b><em class="${r.delta < 0 ? 'dn' : ''}">${r.delta > 0 ? '+' : ''}${r.delta}</em></div><div class="msub">Puntuación Elo</div>
     <button class="btn big" id="bNew">★ Nueva partida</button>
     <div class="two"><button class="btn sec" id="bRe">Revancha</button><button class="btn sec" id="bHome">Inicio</button></div>`);
   $('#bNew').onclick = () => { closeModal(); findDuel(); }; $('#bRe').onclick = () => socket.emit('rematch'); $('#bHome').onclick = () => { closeModal(); home(); };
 }
 function findDuel() { phase = 'search'; show('play'); setMode(true); hideAway(); $('#prompt').textContent = '…'; $('#status').textContent = 'Buscando rival…'; setBar('tubeMe', 0); setBar('tubeRv', 0);
-  $('#rvName').textContent = ''; $('#meName').textContent = user.username; $('#clock').textContent = '3:00'; ctx = null; socket.emit('queue'); }
+  $('#rvName').textContent = ''; $('#meName').innerHTML = av(user.character, 40) + esc(user.username); $('#clock').textContent = '3:00'; ctx = null; socket.emit('queue'); }
 $('#findDuel').onclick = findDuel;
 
 /* ---------- Chat ---------- */
