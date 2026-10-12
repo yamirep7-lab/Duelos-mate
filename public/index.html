@@ -4,149 +4,243 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MathDuel</title>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
 <style>
-:root{--paper:#E9EEF5;--ink:#0E1B2E;--cobalt:#1F4BFF;--signal:#FFC400;--rival:#E8452C;--line:#C6D0E0;--card:#F8FAFD}
-@media (prefers-color-scheme:dark){:root{--paper:#0E1B2E;--ink:#E9EEF5;--line:#2A3B57;--card:#14253D;--cobalt:#6C8CFF}}
+:root{--bg:#0b0e0c;--card:#161b17;--card2:#1f2621;--line:#2a332d;--tx:#eef3ee;--mute:#92a094;--g:#81b64c;--gd:#45753c;--red:#e5594b;--amb:#ffb020}
 *{box-sizing:border-box}
-body{margin:0;min-height:100vh;background:var(--paper);color:var(--ink);font-family:'Bricolage Grotesque',system-ui,sans-serif;
-  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:32px 32px}
-main{max-width:720px;margin:0 auto;padding:32px 20px}
-section[hidden]{display:none}
-h1{font-size:clamp(2.2rem,8vw,3.6rem);font-weight:800;margin:0 0 4px;letter-spacing:-.03em}
-h2{font-size:1.1rem;margin:24px 0 8px}
-p.sub{margin:0 0 24px;opacity:.75}
-.panel{background:var(--card);border:2px solid var(--ink);border-radius:6px;padding:20px;box-shadow:6px 6px 0 var(--ink)}
-input,button{font:inherit;color:inherit}
-input{width:100%;padding:12px;margin:0 0 10px;background:var(--paper);border:2px solid var(--ink);border-radius:4px}
-button{cursor:pointer;padding:12px 18px;border:2px solid var(--ink);border-radius:4px;background:var(--card);font-weight:600}
-button.go{background:var(--cobalt);color:#fff}
-button:hover{transform:translate(-1px,-1px)}
-:focus-visible{outline:3px solid var(--signal);outline-offset:2px}
-.row{display:flex;gap:10px;flex-wrap:wrap}
-.err{color:var(--rival);min-height:1.4em;margin:6px 0 0}
-.stats{display:flex;gap:24px;margin:12px 0 20px}.stats b{display:block;font-size:1.8rem}
-table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:6px 4px;border-bottom:1px solid var(--line)}
-/* Pantalla de juego */
-#prompt{font-size:clamp(2.4rem,11vw,5.5rem);font-weight:800;text-align:center;white-space:pre-line;line-height:1.1;margin:28px 0;letter-spacing:-.02em;min-height:2.4em;display:grid;place-items:center}
-#ans{font-size:2rem;text-align:center;font-weight:600}
-.ruler{position:relative;height:18px;margin:6px 0;border:2px solid var(--ink);border-radius:3px;background:repeating-linear-gradient(90deg,transparent 0 9.9%,var(--line) 9.9% 10%)}
-.ruler i{position:absolute;inset:0 auto 0 0;width:0;transition:width .25s}
-#me i{background:var(--cobalt)}#rv i{background:var(--rival)}
-#timer{height:6px;background:var(--signal);transform-origin:left;margin-top:12px}
-#play.locked #prompt{opacity:.25}
-#play.locked #ans{border-color:var(--rival);background:color-mix(in srgb,var(--rival) 20%,var(--paper))}
-#status{text-align:center;min-height:1.5em;margin-top:12px;font-weight:600}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:'Nunito',system-ui,sans-serif;font-weight:700;min-height:100vh}
+header{display:flex;align-items:center;gap:18px;padding:12px 20px;background:#080a09;border-bottom:1px solid var(--line)}
+header[hidden],section[hidden],[hidden]{display:none!important}
+.logo{font-weight:900;font-size:1.5rem;color:var(--g);margin-right:auto;letter-spacing:-.02em}
+nav button{background:none;border:0;color:var(--mute);font-size:1rem;font-weight:800;padding:8px 12px;cursor:pointer;border-radius:8px}
+nav button.on,nav button:hover{color:var(--tx);background:var(--card2)}
+.pill{background:var(--card2);padding:7px 14px;border-radius:20px;font-weight:800}.pill b{color:var(--g)}
+main{max-width:760px;margin:0 auto;padding:24px 16px 60px}
+h1{font-size:2.2rem;font-weight:900;margin:0 0 6px}h2{font-size:1.15rem;margin:26px 0 10px;font-weight:900}
+.mute{color:var(--mute)}
+.card{background:var(--card);border-radius:12px;padding:20px;border:1px solid var(--line)}
+input{width:100%;padding:13px;margin:0 0 10px;background:var(--bg);border:2px solid var(--line);border-radius:8px;color:var(--tx);font:inherit}
+input:focus{border-color:var(--g);outline:0}
+.btn{font:inherit;font-weight:900;font-size:1.05rem;color:#fff;background:var(--g);border:0;border-bottom:4px solid var(--gd);border-radius:10px;padding:13px 20px;cursor:pointer}
+.btn:hover{filter:brightness(1.08)}.btn:active{transform:translateY(2px);border-bottom-width:2px}
+.btn.sec{background:var(--card2);border-bottom-color:#111713;color:var(--tx)}
+.btn.big{width:100%;font-size:1.35rem;padding:18px}.btn.sm{padding:6px 12px;font-size:.9rem}
+.btn[disabled]{opacity:.35;cursor:default;filter:none}
+:focus-visible{outline:3px solid var(--g);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1}
+.stats{display:flex;gap:26px;margin:14px 0 22px}.stats b{display:block;font-size:1.7rem}.stats span{color:var(--mute);font-size:.9rem}
+table{width:100%;border-collapse:collapse}th{color:var(--mute);font-size:.85rem;text-align:left}td,th{padding:10px 6px;border-bottom:1px solid var(--line)}
+tr.me td{background:#1c2a1a}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#44504a;margin-right:8px}.dot.on{background:var(--g);box-shadow:0 0 8px var(--g)}
+.err{color:var(--red);min-height:1.3em;margin:4px 0 0}
+/* Partida */
+.vs{display:flex;justify-content:space-between;align-items:center;margin:6px 2px;font-weight:900}
+#clock{font-size:1.5rem;background:var(--card2);padding:4px 14px;border-radius:8px;font-variant-numeric:tabular-nums}#clock.low{color:var(--red)}
+#prompt{font-size:clamp(2.4rem,11vw,5.2rem);font-weight:900;text-align:center;white-space:pre-line;line-height:1.1;margin:26px 0;min-height:2.4em;display:grid;place-items:center}
+#ans{font-size:2rem;text-align:center;font-weight:900}
+#play.locked #prompt{opacity:.25}#play.locked #ans{border-color:var(--red)}
+#status{text-align:center;min-height:1.4em;margin-top:10px;color:var(--mute)}
+#away{background:#3a2a10;color:var(--amb);padding:10px;border-radius:8px;text-align:center;margin-bottom:10px}
+#qtimer{height:6px;background:var(--g);transform-origin:left;border-radius:3px;margin-top:12px}
+.ansrow{display:flex;gap:10px}.ansrow input{margin:0}.ansrow .btn{flex:0 0 auto}
+#chatBox{margin-top:16px;padding:12px}#chatLog{height:110px;overflow-y:auto;margin-bottom:10px;font-size:.95rem;word-break:break-word}
+.msg{margin:3px 0}.msg b{color:var(--g)}.msg.me b{color:var(--amb)}
+/* Barra estilo reactor */
+.tube{--c1:#c9ff8f;--c2:#55d62a;--c3:#1b8a0a;--glow:#55d62a99;position:relative;height:28px;border-radius:15px;background:#030504;border:2px solid #2c3a30;box-shadow:inset 0 4px 10px #000,0 0 0 3px #0f140f;overflow:hidden}
+.tube.rival{--c1:#ffe6a0;--c2:#ffb020;--c3:#a35e00;--glow:#ffb02099}
+.fill{position:absolute;inset:0 auto 0 0;width:0;border-radius:15px;transition:width .6s cubic-bezier(.3,1.35,.5,1);
+  background:repeating-linear-gradient(115deg,rgba(255,255,255,.2) 0 10px,transparent 10px 26px),linear-gradient(180deg,var(--c1),var(--c2) 45%,var(--c3));
+  background-size:52px 100%,auto;animation:flow 1s linear infinite;box-shadow:0 0 20px var(--glow),inset 0 0 10px rgba(255,255,255,.55)}
+.fill::after{content:'';position:absolute;inset:0;background:radial-gradient(circle,rgba(255,255,255,.75) 0 2px,transparent 3px) 0 0/24px 14px;animation:bub 2.2s linear infinite;opacity:.65}
+.tube::after{content:'';position:absolute;inset:3px 8px auto;height:7px;border-radius:5px;background:linear-gradient(rgba(255,255,255,.28),transparent);pointer-events:none}
+@keyframes flow{to{background-position:52px 0,0 0}}@keyframes bub{to{background-position:48px -14px}}
+/* Modal estilo chess.com */
+#modal{position:fixed;inset:0;background:#000b;display:grid;place-items:center;z-index:9;padding:16px}
+.mbox{width:min(400px,100%);background:var(--card);border-radius:14px;padding:24px 20px 20px;text-align:center;box-shadow:0 20px 60px #000}
+.mtitle{font-size:1.9rem;font-weight:900}.msub{color:var(--mute);font-size:.95rem;margin:4px 0}
+.elo{display:flex;justify-content:center;align-items:center;gap:8px;margin:18px 0 6px}.elo b{font-size:2.6rem}.elo em{font-style:normal;font-weight:900;color:var(--g)}.elo em.dn{color:var(--red)}
+.two{display:flex;gap:10px;margin-top:12px}.two>*{flex:1}.mbox .btn.big{margin-top:18px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,40px);background:var(--card2);border:1px solid var(--g);padding:12px 18px;border-radius:10px;opacity:0;transition:.3s;z-index:10;pointer-events:none}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
+<header id="top" hidden>
+  <div class="logo">⚡ MathDuel</div>
+  <nav><button id="nHome" class="on">Jugar</button><button id="nRank">Ranking</button></nav>
+  <div class="pill" id="pill"></div><button class="btn sec sm" id="logout">Salir</button>
+</header>
 <main>
   <section id="auth">
-    <h1>MathDuel</h1>
-    <p class="sub">Duelos de cálculo mental 1 vs 1. Gana quien acierte primero 10 operaciones.</p>
-    <form class="panel" id="authForm">
+    <h1>⚡ MathDuel</h1><p class="mute">Duelos de cálculo mental 1 vs 1. Gana quien acierte 10 operaciones primero.</p>
+    <form class="card" id="authForm">
       <input id="u" placeholder="Usuario" autocomplete="username" required>
       <input id="p" type="password" placeholder="Contraseña (mínimo 8 caracteres)" autocomplete="current-password" required>
-      <div class="row"><button class="go" data-a="login">Entrar</button><button data-a="register">Crear cuenta</button></div>
+      <div class="row"><button class="btn" data-a="login">Entrar</button><button class="btn sec" data-a="register">Crear cuenta</button></div>
       <p class="err" id="authErr" role="alert"></p>
     </form>
   </section>
 
   <section id="home" hidden>
     <h1 id="hello"></h1>
-    <div class="stats"><div><b id="sElo"></b>Elo</div><div><b id="sW"></b>Victorias</div><div><b id="sL"></b>Derrotas</div><div><b id="sB"></b>Récord infinito</div></div>
-    <div class="panel">
-      <div class="row"><button class="go" id="findDuel">Buscar duelo</button></div>
-      <h2>Practicar</h2>
-      <div class="row">
-        <button data-p="relampago">Relámpago · 5 s</button>
-        <button data-p="estandar">Estándar · 10 s</button>
-        <button data-p="precision">Precisión · 20 s</button>
-        <button data-p="infinito">Infinito · 3 fallos</button>
-      </div>
-    </div>
+    <div class="stats"><div><b id="sElo"></b><span>Elo</span></div><div><b id="sW"></b><span>Victorias</span></div><div><b id="sL"></b><span>Derrotas</span></div><div><b id="sB"></b><span>Récord infinito</span></div></div>
+    <button class="btn big" id="findDuel">Buscar duelo</button>
+    <p class="mute">Cada partida dura máximo 3 minutos. Para retar a alguien, entra a Ranking.</p>
+    <button class="btn sec sm" id="bNotif" hidden>🔔 Activar avisos de retos</button>
+    <h2>Practicar</h2>
+    <div class="row"><button class="btn sec" data-p="relampago">Relámpago · 5 s</button><button class="btn sec" data-p="estandar">Estándar · 10 s</button><button class="btn sec" data-p="precision">Precisión · 20 s</button><button class="btn sec" data-p="infinito">Infinito · 3 fallos</button></div>
     <h2>Historial contra rivales</h2>
-    <table><thead><tr><th>Rival</th><th>V</th><th>D</th><th>Racha</th></tr></thead><tbody id="h2h"></tbody></table>
+    <div class="card"><table><thead><tr><th>Rival</th><th>V</th><th>D</th><th>Racha</th></tr></thead><tbody id="h2h"></tbody></table></div>
+  </section>
+
+  <section id="rank" hidden>
+    <h1>Ranking</h1><p class="mute">Toca "Retar" junto a un jugador conectado.</p>
+    <div class="card"><table><thead><tr><th>#</th><th>Jugador</th><th>Elo</th><th>V</th><th>D</th><th></th></tr></thead><tbody id="rankBody"></tbody></table></div>
   </section>
 
   <section id="play" hidden>
-    <div class="ruler" id="rv"><i></i></div>
+    <div id="away" hidden></div>
+    <div class="duel-only"><div class="vs"><span id="rvName"></span></div><div class="tube rival" id="tubeRv"><div class="fill"></div></div></div>
     <div id="prompt"></div>
-    <form id="ansForm"><input id="ans" inputmode="text" autocomplete="off" aria-label="Tu respuesta"></form>
-    <div class="ruler" id="me"><i></i></div>
-    <div id="timer"></div>
+    <form id="ansForm" class="ansrow"><input id="ans" autocomplete="off" aria-label="Tu respuesta"><button class="btn" type="submit">Enviar</button></form>
+    <div class="duel-only"><div class="tube" id="tubeMe"><div class="fill"></div></div>
+      <div class="vs"><span id="meName"></span><span id="clock">3:00</span></div></div>
+    <div id="qtimer" hidden></div>
     <div id="status" role="status"></div>
-    <div class="row" style="justify-content:center;margin-top:16px"><button id="back">Volver al inicio</button></div>
+    <div class="duel-only card" id="chatBox"><div id="chatLog" aria-live="polite"></div>
+      <form id="chatForm" class="ansrow"><input id="chatIn" maxlength="200" placeholder="Escribe un mensaje…" autocomplete="off" aria-label="Mensaje"><button class="btn sec" type="submit">Enviar</button></form></div>
+    <div class="row" style="justify-content:center;margin-top:16px"><button class="btn sec" id="back" style="flex:0 0 auto">Salir</button></div>
   </section>
 </main>
+<div id="modal" hidden><div class="mbox" id="mbox"></div></div>
+<div id="toast" role="status"></div>
 
 <script src="/shared/mathGenerator.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script>
-const $ = s => document.querySelector(s);
-const show = id => document.querySelectorAll('section').forEach(e => e.hidden = e.id !== id);
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const api = (u, b) => fetch(u, { method: b ? 'POST' : 'GET', headers: { 'Content-Type': 'application/json' }, body: b && JSON.stringify(b) })
   .then(async r => { const j = await r.json().catch(() => ({})); if (!r.ok) throw j; return j; });
+let user, socket, phase = 'idle', ctx = null, goal = 10, lockedUntil = 0;
+const show = id => { $$('main>section').forEach(e => e.hidden = e.id !== id); $('#top').hidden = id === 'auth';
+  $('#nHome').classList.toggle('on', id === 'home'); $('#nRank').classList.toggle('on', id === 'rank'); };
+function toast(t) { const e = $('#toast'); e.textContent = t; e.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.remove('on'), 3500); }
+const openModal = h => { $('#mbox').innerHTML = h; $('#modal').hidden = false; }, closeModal = () => $('#modal').hidden = true;
+const setBar = (id, f) => $(`#${id} .fill`).style.width = Math.min(100, f * 100) + '%';
 
-/* ---------- Auth y portada ---------- */
-let user, socket, ctx;
+/* ---------- Sesión y portada ---------- */
+function setUser(u) { user = u; $('#pill').innerHTML = `${esc(u.username)} · <b>${u.elo}</b>`; }
 async function home(u) {
-  user = u || await api('/api/me');
-  $('#hello').textContent = user.username;
-  $('#sElo').textContent = user.elo; $('#sW').textContent = user.wins; $('#sL').textContent = user.losses; $('#sB').textContent = user.best_survival;
+  setUser(u || await api('/api/me')); connect();
+  $('#hello').textContent = user.username; $('#sElo').textContent = user.elo; $('#sW').textContent = user.wins; $('#sL').textContent = user.losses; $('#sB').textContent = user.best_survival;
   const rows = await api('/api/h2h').catch(() => []);
   $('#h2h').innerHTML = rows.length ? rows.map(r => `<tr><td>${esc(r.rival)}</td><td>${r.wins}</td><td>${r.losses}</td><td>${r.streak > 0 ? '+' + r.streak : r.streak}</td></tr>`).join('')
-    : '<tr><td colspan="4">Todavía no has jugado ningún duelo.</td></tr>';
-  show('home');
+    : '<tr><td colspan="4" class="mute">Todavía no has jugado ningún duelo.</td></tr>';
+  phase = 'idle'; refreshNotifBtn(); show('home');
 }
-const esc = s => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-$('#authForm').onsubmit = async e => {
-  e.preventDefault();
-  try { await home(await api('/api/' + e.submitter.dataset.a, { username: $('#u').value, password: $('#p').value })); }
-  catch (x) { $('#authErr').textContent = x.error || 'No se pudo conectar.'; }
+$('#authForm').onsubmit = async e => { e.preventDefault();
+  try { await home(await api('/api/' + e.submitter.dataset.a, { username: $('#u').value, password: $('#p').value })); } catch (x) { $('#authErr').textContent = x.error || 'No se pudo conectar.'; } };
+$('#logout').onclick = async () => { await api('/api/logout', {}); if (socket) socket.disconnect(); socket = null; show('auth'); };
+$('#nHome').onclick = () => phase === 'idle' ? home() : 0;
+$('#nRank').onclick = async () => {
+  if (phase !== 'idle') return; show('rank');
+  const rows = await api('/api/ranking').catch(() => []);
+  $('#rankBody').innerHTML = rows.map((r, i) => `<tr class="${r.me ? 'me' : ''}"><td>${i + 1}</td><td><span class="dot ${r.online ? 'on' : ''}"></span>${esc(r.username)}</td><td>${r.elo}</td><td>${r.wins}</td><td>${r.losses}</td>
+    <td>${r.me ? '' : `<button class="btn sm" data-c="${esc(r.username)}" ${r.online ? '' : 'disabled'}>Retar</button>`}</td></tr>`).join('');
+  $$('[data-c]').forEach(b => b.onclick = () => socket.emit('challenge', b.dataset.c));
 };
-api('/api/me').then(home).catch(() => show('auth'));
 
-/* ---------- Juego (compartido por duelo y práctica) ---------- */
-let lockedUntil = 0;
-const setBar = (id, f) => $(`#${id} i`).style.width = (f * 100) + '%';
-function ask(q) { $('#prompt').textContent = q.prompt; $('#ans').value = ''; $('#ans').focus(); }
-function lock(ms) { lockedUntil = Date.now() + ms; $('#play').classList.add('locked'); setTimeout(() => { $('#play').classList.remove('locked'); $('#ans').focus(); }, ms); }
-$('#ansForm').onsubmit = e => { e.preventDefault(); const v = $('#ans').value.trim(); if (!v || Date.now() < lockedUntil || !ctx) return; ctx.submit(v); };
-$('#back').onclick = () => { ctx && ctx.stop(); ctx = null; home(); };
+/* ---------- Juego (común) ---------- */
+const focusAns = () => { if (document.activeElement !== $('#chatIn')) $('#ans').focus(); };
+function ask(q) { $('#prompt').textContent = q.prompt; $('#ans').value = ''; focusAns(); }
+function lock(ms) { lockedUntil = Date.now() + ms; $('#play').classList.add('locked'); setTimeout(() => { $('#play').classList.remove('locked'); focusAns(); }, ms); }
+$('#ansForm').onsubmit = e => { e.preventDefault(); const v = $('#ans').value.trim(); if (v && Date.now() >= lockedUntil && ctx) ctx.submit(v); };
+$('#back').onclick = () => {
+  if (phase === 'duel') { if (!confirm('Si sales ahora pierdes la partida. ¿Salir?')) return; socket.emit('leave'); return; }
+  if (phase === 'search') socket.emit('unqueue'); if (ctx && ctx.stop) ctx.stop(); ctx = null; home();
+};
+let clockT, awayT;
+function startClock(ms) { const end = Date.now() + ms; clearInterval(clockT);
+  const f = () => { const s = Math.max(0, Math.ceil((end - Date.now()) / 1000)); $('#clock').textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); $('#clock').classList.toggle('low', s <= 30); };
+  f(); clockT = setInterval(f, 250); }
+function showAway(ms) { const end = Date.now() + ms; $('#away').hidden = false; clearInterval(awayT);
+  const f = () => $('#away').textContent = `Tu rival se desconectó. Tiene ${Math.max(0, Math.ceil((end - Date.now()) / 1000))} s para volver…`; f(); awayT = setInterval(f, 500); }
+const hideAway = () => { clearInterval(awayT); $('#away').hidden = true; };
+const setMode = duel => { $$('.duel-only').forEach(e => e.hidden = !duel); $('#qtimer').hidden = duel; };
 
 /* ---------- PvP ---------- */
-$('#findDuel').onclick = () => {
-  show('play'); $('#rv').hidden = false; $('#timer').hidden = true; $('#prompt').textContent = '…'; $('#status').textContent = 'Buscando rival…';
-  setBar('me', 0); setBar('rv', 0);
-  socket = socket || io();
-  let goal = 10;
-  socket.off(); socket.emit('queue');
-  socket.on('match', m => { goal = m.goal; $('#status').textContent = `Rival: ${m.rival.username} (${m.rival.elo} Elo)`; ask(m.q); });
+function connect() {
+  if (socket) return; socket = io();
+  socket.on('match', m => { if (ctx && ctx.stop) ctx.stop(); closeModal(); phase = 'duel'; goal = m.goal; show('play'); setMode(true); hideAway();
+    $('#chatLog').innerHTML = ''; (m.chat || []).forEach(addMsg);
+    $('#rvName').textContent = `${m.rival.username} · ${m.rival.elo}`; $('#meName').textContent = user.username;
+    setBar('tubeMe', (m.you || 0) / goal); setBar('tubeRv', (m.rv || 0) / goal); ask(m.q); startClock(m.msLeft);
+    $('#status').textContent = m.resume ? 'Volviste a la partida.' : '¡Empieza el duelo!'; if (m.away) showAway(20000);
+    ctx = { submit: v => socket.emit('answer', v) }; });
   socket.on('q', ask);
-  socket.on('progress', p => { setBar('me', p.you / goal); setBar('rv', p.rival / goal); });
-  socket.on('locked', ms => { lock(ms); $('#status').textContent = 'Error. Bloqueado 1 s'; });
-  socket.on('end', r => { $('#status').textContent = r.won ? `Victoria. Ahora tienes ${r.me.elo} Elo.` : `Derrota. Ahora tienes ${r.me.elo} Elo.`; ctx = null; user = r.me; });
-  ctx = { submit: v => socket.emit('answer', v), stop: () => { socket.disconnect(); socket = null; } };
-};
+  socket.on('progress', p => { setBar('tubeMe', p.you / goal); setBar('tubeRv', p.rival / goal); });
+  socket.on('locked', ms => { lock(ms); $('#status').textContent = 'Error: bloqueado 1 s'; });
+  socket.on('rival_away', d => showAway(d.ms)); socket.on('rival_back', hideAway);
+  socket.on('end', r => { clearInterval(clockT); hideAway(); ctx = null; phase = 'idle'; setUser({ ...user, elo: r.elo }); endModal(r); });
+  socket.on('toast', toast); socket.on('chat', addMsg);
+  socket.on('replaced', () => { socket = null; alert('Abriste MathDuel en otra pestaña. Cierra esta.'); location.reload(); });
+  socket.on('rematch_offer', d => { toast(`${d.from} quiere la revancha`); const b = $('#bRe'); if (b) b.textContent = 'Aceptar revancha'; });
+  socket.on('challenged', d => { if (phase === 'duel') return socket.emit('reply', false); alertChallenge(d);
+    openModal(`<div class="mtitle">⚔️ ¡Reto!</div><p class="msub">${esc(d.from)} te desafía a un duelo.</p>
+      <button class="btn big" id="bOk">Aceptar</button><div class="two"><button class="btn sec" id="bNo">Rechazar</button></div>`);
+    $('#bOk').onclick = () => { closeModal(); socket.emit('reply', true); }; $('#bNo').onclick = () => { closeModal(); socket.emit('reply', false); }; });
+}
+function endModal(r) {
+  const reasons = { abandono: 'Por abandono', tiempo: 'Por tiempo', meta: 'Por aciertos' };
+  const [icon, title] = r.draw ? ['🤝', 'Empate'] : r.won ? ['🏆', '¡Has ganado!'] : ['💥', 'Has perdido'];
+  openModal(`<div class="mtitle">${icon} ${title}</div><div class="msub">${reasons[r.reason] || ''} · ${r.score[0]}–${r.score[1]} contra ${esc(r.rival)}</div>
+    <div class="elo"><span style="font-size:2rem">⚡</span><b>${r.elo}</b><em class="${r.delta < 0 ? 'dn' : ''}">${r.delta > 0 ? '+' : ''}${r.delta}</em></div><div class="msub">Puntuación Elo</div>
+    <button class="btn big" id="bNew">★ Nueva partida</button>
+    <div class="two"><button class="btn sec" id="bRe">Revancha</button><button class="btn sec" id="bHome">Inicio</button></div>`);
+  $('#bNew').onclick = () => { closeModal(); findDuel(); }; $('#bRe').onclick = () => socket.emit('rematch'); $('#bHome').onclick = () => { closeModal(); home(); };
+}
+function findDuel() { phase = 'search'; show('play'); setMode(true); hideAway(); $('#prompt').textContent = '…'; $('#status').textContent = 'Buscando rival…'; setBar('tubeMe', 0); setBar('tubeRv', 0);
+  $('#rvName').textContent = ''; $('#meName').textContent = user.username; $('#clock').textContent = '3:00'; ctx = null; socket.emit('queue'); }
+$('#findDuel').onclick = findDuel;
+
+/* ---------- Chat ---------- */
+function addMsg(c) { const d = document.createElement('div'), b = document.createElement('b'); d.className = 'msg' + (c.from === user.username ? ' me' : '');
+  b.textContent = c.from + ': '; d.append(b, document.createTextNode(c.text)); const l = $('#chatLog'); l.append(d); l.scrollTop = l.scrollHeight; }
+$('#chatForm').onsubmit = e => { e.preventDefault(); const t = $('#chatIn').value.trim(); if (t && phase === 'duel') { socket.emit('chat', t); $('#chatIn').value = ''; } };
+
+/* ---------- Avisos de reto ---------- */
+function refreshNotifBtn() { $('#bNotif').hidden = !('Notification' in window) || Notification.permission !== 'default'; }
+$('#bNotif').onclick = async () => { await Notification.requestPermission(); refreshNotifBtn(); toast(Notification.permission === 'granted' ? 'Avisos activados' : 'Tu navegador bloqueó los avisos'); };
+function beep() { try { const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(), g = a.createGain();
+  o.connect(g); g.connect(a.destination); o.frequency.value = 880; g.gain.setValueAtTime(.15, a.currentTime); g.gain.exponentialRampToValueAtTime(.001, a.currentTime + .6); o.start(); o.stop(a.currentTime + .6); } catch {} }
+let titleT, chT; const stopFlash = () => { clearInterval(titleT); document.title = 'MathDuel'; };
+window.addEventListener('focus', stopFlash);
+function alertChallenge(d) {
+  beep(); clearTimeout(chT); chT = setTimeout(() => { if ($('#bOk')) closeModal(); }, d.ms);   // el reto vence a los 30 s
+  if (document.hidden) {
+    let on = false; clearInterval(titleT); titleT = setInterval(() => document.title = (on = !on) ? `⚔️ ${d.from} te reta` : 'MathDuel', 900);
+    if ('Notification' in window && Notification.permission === 'granted') { const n = new Notification('⚔️ ¡Te están retando!', { body: `${d.from} te desafía a un duelo`, tag: 'reto' }); n.onclick = () => { window.focus(); n.close(); }; }
+  }
+}
 
 /* ---------- Práctica ---------- */
-document.querySelectorAll('[data-p]').forEach(b => b.onclick = () => practice(b.dataset.p));
+$$('[data-p]').forEach(b => b.onclick = () => practice(b.dataset.p));
 function practice(key) {
   const infinite = key === 'infinito', ms = MathGen.MODES[infinite ? 'estandar' : key].ms, TOTAL = 20;
-  let q, n = 0, fails = 0, run = 0, best = 0, t0, raf, over = false;
-  show('play'); $('#rv').hidden = true; $('#timer').hidden = false; setBar('me', 0);
+  let cur, n = 0, fails = 0, run = 0, best = 0, t0, raf, over = false;
+  phase = 'practice'; show('play'); setMode(false); hideAway();
   const line = () => $('#status').textContent = infinite ? `Racha ${run} · Récord ${best} · Fallos ${fails}/3` : `Pregunta ${n + 1} de ${TOTAL} · Fallos ${fails}`;
-  const end = () => { over = true; cancelAnimationFrame(raf); $('#prompt').textContent = infinite ? `Mejor racha: ${best}` : `${TOTAL - fails} de ${TOTAL}`;
-    $('#status').textContent = 'Fin de la sesión.'; ctx = null; if (infinite) api('/api/survival', { streak: best }).then(u => user = u).catch(() => {}); };
-  const next = () => { if (over) return; q = MathGen.generate(); ask(q); line(); t0 = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(tick); };
-  const tick = () => { const f = 1 - (performance.now() - t0) / ms; $('#timer').style.transform = `scaleX(${Math.max(0, f)})`; f <= 0 ? miss() : raf = requestAnimationFrame(tick); };
-  const miss = () => { fails++; run = 0; n++; setBar('me', n / TOTAL); if (infinite ? fails >= 3 : n >= TOTAL) return end(); lock(1000); setTimeout(next, 1000); cancelAnimationFrame(raf); };
+  const end = () => { over = true; cancelAnimationFrame(raf); $('#prompt').textContent = infinite ? `Mejor racha: ${best}` : `${TOTAL - fails} de ${TOTAL}`; $('#status').textContent = 'Fin de la sesión.'; ctx = null;
+    if (infinite) api('/api/survival', { streak: best }).then(setUser).catch(() => {}); };
+  const next = () => { if (over) return; cur = MathGen.generate(); ask(cur); line(); t0 = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(tick); };
+  const tick = () => { const f = 1 - (performance.now() - t0) / ms; $('#qtimer').style.transform = `scaleX(${Math.max(0, f)})`; f <= 0 ? miss() : raf = requestAnimationFrame(tick); };
+  const miss = () => { cancelAnimationFrame(raf); fails++; run = 0; n++; if (infinite ? fails >= 3 : n >= TOTAL) return end(); lock(1000); setTimeout(next, 1000); };
   ctx = { stop: () => { over = true; cancelAnimationFrame(raf); },
-    submit: v => { if (MathGen.check(q, v)) { run++; best = Math.max(best, run); n++; setBar('me', n / TOTAL); if (!infinite && n >= TOTAL) return end(); next(); } else miss(); } };
+    submit: v => { if (MathGen.check(cur, v)) { run++; best = Math.max(best, run); n++; if (!infinite && n >= TOTAL) return end(); next(); } else miss(); } };
   next();
 }
+api('/api/me').then(home).catch(() => show('auth'));
 </script>
 </body>
 </html>
