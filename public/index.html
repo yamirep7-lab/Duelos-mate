@@ -91,7 +91,7 @@ tr.me td{background:#1c2a1a}.dot{display:inline-block;width:9px;height:9px;borde
     <p class="mute">Cada partida dura máximo 3 minutos. Para retar a alguien, entra a Ranking.</p>
     <button class="btn sec sm" id="bNotif" hidden>🔔 Activar avisos de retos</button>
     <h2>Practicar</h2>
-    <div class="row"><button class="btn sec" data-p="relampago">Relámpago · 5 s</button><button class="btn sec" data-p="estandar">Estándar · 10 s</button><button class="btn sec" data-p="precision">Precisión · 20 s</button><button class="btn sec" data-p="infinito">Infinito · 3 fallos</button></div>
+    <div class="row"><button class="btn sec" data-p="relampago">Fácil · 20 s</button><button class="btn sec" data-p="estandar">Medio · 40 s</button><button class="btn sec" data-p="precision">Difícil · 1 min</button><button class="btn sec" data-p="infinito">Infinito · 3 fallos</button></div>
     <h2>Historial contra rivales</h2>
     <div class="card"><table><thead><tr><th>Rival</th><th>V</th><th>D</th><th>Racha</th></tr></thead><tbody id="h2h"></tbody></table></div>
   </section>
@@ -172,7 +172,11 @@ $('#nRank').onclick = async () => {
 
 /* ---------- Juego (común) ---------- */
 const focusAns = () => { if (document.activeElement !== $('#chatIn')) $('#ans').focus(); };
-function ask(q) { $('#prompt').textContent = q.prompt; $('#ans').value = ''; focusAns(); }
+function say(t) { // muestra el enunciado y reduce la letra si es largo (problemas con contexto, cadenas)
+  const ls = String(t).split('\n'), w = Math.max(...ls.map(l => [...l].length)), el = $('#prompt');
+  el.textContent = t; el.style.fontSize = w > 28 || ls.length > 4 ? 'clamp(1.4rem,6vw,2.6rem)' : w > 16 ? 'clamp(2rem,8vw,3.6rem)' : '';
+}
+function ask(q) { say(q.prompt); $('#ans').value = ''; focusAns(); }
 function lock(ms) { lockedUntil = Date.now() + ms; $('#play').classList.add('locked'); setTimeout(() => { $('#play').classList.remove('locked'); focusAns(); }, ms); }
 $('#ansForm').onsubmit = e => { e.preventDefault(); const v = $('#ans').value.trim(); if (v && Date.now() >= lockedUntil && ctx) ctx.submit(v); };
 $('#back').onclick = () => {
@@ -219,7 +223,7 @@ function endModal(r) {
     <div class="two"><button class="btn sec" id="bRe">Revancha</button><button class="btn sec" id="bHome">Inicio</button></div>`);
   $('#bNew').onclick = () => { closeModal(); findDuel(); }; $('#bRe').onclick = () => socket.emit('rematch'); $('#bHome').onclick = () => { closeModal(); home(); };
 }
-function findDuel() { phase = 'search'; show('play'); setMode(true); hideAway(); $('#prompt').textContent = '…'; $('#status').textContent = 'Buscando rival…'; setBar('tubeMe', 0); setBar('tubeRv', 0);
+function findDuel() { phase = 'search'; show('play'); setMode(true); hideAway(); say('…'); $('#status').textContent = 'Buscando rival…'; setBar('tubeMe', 0); setBar('tubeRv', 0);
   $('#rvName').textContent = ''; $('#meName').innerHTML = av(user.character, 40) + esc(user.username); $('#clock').textContent = '3:00'; ctx = null; socket.emit('queue'); }
 $('#findDuel').onclick = findDuel;
 
@@ -246,13 +250,13 @@ function alertChallenge(d) {
 /* ---------- Práctica ---------- */
 $$('[data-p]').forEach(b => b.onclick = () => practice(b.dataset.p));
 function practice(key) {
-  const infinite = key === 'infinito', ms = MathGen.MODES[infinite ? 'estandar' : key].ms, TOTAL = 20;
+  const infinite = key === 'infinito', mode = MathGen.MODES[infinite ? 'estandar' : key], ms = mode.ms, TOTAL = 20;
   let cur, n = 0, fails = 0, run = 0, best = 0, t0, raf, over = false;
   phase = 'practice'; show('play'); setMode(false); hideAway();
   const line = () => $('#status').textContent = infinite ? `Racha ${run} · Récord ${best} · Fallos ${fails}/3` : `Pregunta ${n + 1} de ${TOTAL} · Fallos ${fails}`;
-  const end = () => { over = true; cancelAnimationFrame(raf); $('#prompt').textContent = infinite ? `Mejor racha: ${best}` : `${TOTAL - fails} de ${TOTAL}`; $('#status').textContent = 'Fin de la sesión.'; ctx = null;
+  const end = () => { over = true; cancelAnimationFrame(raf); say(infinite ? `Mejor racha: ${best}` : `${TOTAL - fails} de ${TOTAL}`); $('#status').textContent = 'Fin de la sesión.'; ctx = null;
     if (infinite) api('/api/survival', { streak: best }).then(setUser).catch(() => {}); };
-  const next = () => { if (over) return; cur = MathGen.generate(); ask(cur); line(); t0 = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(tick); };
+  const next = () => { if (over) return; cur = MathGen.generate(undefined, mode.level); ask(cur); line(); t0 = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(tick); };
   const tick = () => { const f = 1 - (performance.now() - t0) / ms; $('#qtimer').style.transform = `scaleX(${Math.max(0, f)})`; f <= 0 ? miss() : raf = requestAnimationFrame(tick); };
   const miss = () => { cancelAnimationFrame(raf); fails++; run = 0; n++; if (infinite ? fails >= 3 : n >= TOTAL) return end(); lock(1000); setTimeout(next, 1000); };
   ctx = { stop: () => { over = true; cancelAnimationFrame(raf); },
